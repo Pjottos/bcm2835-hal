@@ -110,6 +110,19 @@ fn pin_level(pin_num: u32) -> u32 {
     }
 }
 
+#[inline]
+fn toggle_pin(pin_num: u32) {
+    let level = pin_level(pin_num);
+
+    if level == 0 {
+        set_pin(pin_num);
+    } else {
+        unsafe {
+            *clear_reg(pin_num) |= level;
+        }
+    }
+}
+
 pub struct Input;
 pub struct Output;
 
@@ -164,6 +177,15 @@ macro_rules! impl_gpio {
 
             fn is_set_low(&self) -> Result<bool, Self::Error> {
                 Ok(pin_level($pin_number) == 0)
+            }
+        }
+
+        impl ToggleableOutputPin for $t<Output> {
+            type Error = Infallible;
+
+            fn toggle(&mut self) -> Result<(), Self::Error> {
+                toggle_pin($pin_number);
+                Ok(())
             }
         }
     };
