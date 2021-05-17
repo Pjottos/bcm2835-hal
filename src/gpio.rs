@@ -62,42 +62,51 @@ fn set_pin_function(pin_num: u32, function: u32) {
 }
 
 #[inline]
-fn clear_pin(pin_num: u32) {
-    let clear_reg = match pin_num / 31 {
+fn clear_reg(pin_num: u32) -> *mut u32 {
+    match pin_num / 31 {
         0 => GP_CLR0,
         1 => GP_CLR1,
         _ => unreachable!(),
-    };
+    }
+}
 
+#[inline]
+fn clear_pin(pin_num: u32) {
     unsafe {
-        *clear_reg |= 1 << (pin_num % 32);
+        *clear_reg(pin_num) |= 1 << (pin_num % 32);
+    }
+}
+
+#[inline]
+fn set_reg(pin_num: u32) -> *mut u32 {
+    match pin_num / 31 {
+        0 => GP_SET0,
+        1 => GP_SET1,
+        _ => unreachable!(),
     }
 }
 
 #[inline]
 fn set_pin(pin_num: u32) {
-    let set_reg = match pin_num / 31 {
-        0 => GP_SET0,
-        1 => GP_SET1,
-        _ => unreachable!(),
-    };
-
     unsafe {
-        *set_reg |= 1 << (pin_num % 32);
+        *set_reg(pin_num) |= 1 << (pin_num % 32);
+    }
+}
+
+#[inline]
+fn level_reg(pin_num: u32) -> *mut u32 {
+    match pin_num / 31 {
+        0 => GP_LEV0,
+        1 => GP_LEV1,
+        _ => unreachable!(),
     }
 }
 
 /// Returns nonzero if level is high, 0 if level is low.
 #[inline]
 fn pin_level(pin_num: u32) -> u32 {
-    let lev_reg = match pin_num / 31 {
-        0 => GP_LEV0,
-        1 => GP_LEV1,
-        _ => unreachable!(),
-    };
-
     unsafe {
-        *lev_reg & (1 << (pin_num % 32))
+        *level_reg(pin_num) & (1 << (pin_num % 32))
     }
 }
 
@@ -145,6 +154,16 @@ macro_rules! impl_gpio {
             fn set_low(&mut self) -> Result<(), Self::Error> {
                 clear_pin($pin_number);
                 Ok(())
+            }
+        }
+        
+        impl StatefulOutputPin for $t<Output> {
+            fn is_set_high(&self) -> Result<bool, Self::Error> {
+                Ok(pin_level($pin_number) != 0)
+            }
+
+            fn is_set_low(&self) -> Result<bool, Self::Error> {
+                Ok(pin_level($pin_number) == 0)
             }
         }
     };
