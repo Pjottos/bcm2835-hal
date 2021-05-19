@@ -54,7 +54,7 @@ fn set_pin_function(pin_num: u32, function: u32) {
         let shift_amount = (pin_num % 10) * 3;
         let mut reg = *function_select_reg;
 
-        reg &= !0x07 << shift_amount;
+        reg &= !(0x07 << shift_amount);
         reg |= (function & 0x07) << shift_amount;
 
         *function_select_reg = reg;
